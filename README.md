@@ -125,10 +125,10 @@ vercel deploy
 ## Environment Variables
 
 | Variable | Required | Description |
-|---|---|---|
+|---|---|---|---|
 | `GEMINI_API_KEY` | ✅ | Google Gemini API key |
-| `SECRET_TOKEN` | ✅ | Random secret; must match `X-Token` header sent by agent |
-| `ALLOWED_ORIGIN` | ✅ | Exact origin to allow CORS from, e.g. `https://claude.ai` |
+| `SECRET_TOKEN` | ✅ (for `/generate`) | Random secret; must match `X-Token` header sent by agent |
+| `ALLOWED_ORIGIN` | ✅ (for `/generate`) | Exact origin to allow CORS from, e.g. `https://claude.ai` |
 | `PORT` | — | Port to listen on (default: `3000`) |
 
 ---
@@ -152,9 +152,31 @@ Response 4xx/5xx:
   { "error": "message" }
 ```
 
+### `POST /api/generate-image` (free tier)
+
+No auth, no CORS checks. Uses `gemini-2.5-flash-image` — works with **free tier Gemini API keys**.
+
+```
+Body:
+  { "prompt": "a red fox in the snow" }
+
+Response 200:
+  Raw Gemini candidate response containing inline base64 image data.
+```
+
 ### `GET /health`
 
 No auth. Returns `{ "ok": true }`.
+
+---
+
+## Client Test Script
+
+```bash
+node client.js
+```
+
+Calls `/api/generate-image` and saves the generated image as `generated_<timestamp>.png`.
 
 ---
 
