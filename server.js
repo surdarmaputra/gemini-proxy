@@ -15,7 +15,7 @@ if (!SECRET_TOKEN)   { console.error("Missing SECRET_TOKEN");   process.exit(1);
 if (!ALLOWED_ORIGIN) { console.error("Missing ALLOWED_ORIGIN"); process.exit(1); }
 
 const GEMINI_ENDPOINT =
-  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-preview-image-generation:generateContent";
+  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent";
 
 // --- CORS ---
 app.use((req, res, next) => {
@@ -84,6 +84,53 @@ app.post("/generate", auth, async (req, res) => {
     });
   } catch (e) {
     res.status(502).json({ error: `Upstream error: ${e.message}` });
+  }
+});
+
+// --- Free-tier compatible image generation endpoint (no auth, no CORS) ---
+app.post('/api/generate-image', async (req, res) => {
+  try {
+    const { prompt } = req.body;
+    const apiKey = process.env.GEMINI_API_KEY;
+
+    if (!prompt) {
+      return res.status(400).json({ error: 'Missing "prompt" field in request body.' });
+    }
+
+    if (!apiKey) {
+      return res.status(500).json({ error: 'GEMINI_API_KEY environment variable is not defined.' });
+    }
+
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent?key=${apiKey}`;
+
+    const payload = {
+      contents: [
+        {
+          parts: [{ text: prompt }]
+        }
+      ],
+      generationConfig: {
+        responseModalities: ['TEXT', 'IMAGE']
+      }
+    };
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return res.status(response.status).json({ error: data });
+    }
+
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 });
 
